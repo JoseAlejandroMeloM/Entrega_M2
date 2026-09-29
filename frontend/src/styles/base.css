@@ -7,12 +7,32 @@ html { scroll-behavior: smooth; }
 body {
   margin: 0;
   min-width: 0;
-  background: var(--cream);
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 8% 12%, rgb(233 85 47 / 10%), transparent 25rem),
+    radial-gradient(circle at 92% 4%, rgb(117 103 238 / 11%), transparent 29rem),
+    linear-gradient(180deg, #f8f5ee 0%, var(--cream) 45%, #eeebe3 100%);
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-sans);
   line-height: 1.6;
+  text-rendering: optimizeLegibility;
 }
 
+body::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background-image:
+    linear-gradient(rgb(19 24 39 / 2.5%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(19 24 39 / 2.5%) 1px, transparent 1px);
+  background-size: 3.5rem 3.5rem;
+  content: "";
+  mask-image: linear-gradient(to bottom, black, transparent 72%);
+  pointer-events: none;
+}
+
+::selection { background: var(--mint); color: var(--navy); }
 a { color: inherit; }
 
 a:focus-visible,
@@ -22,11 +42,20 @@ a:focus-visible,
 }
 
 h1,
-h2 {
+h2,
+h3 {
   margin-top: 0;
+  color: var(--navy);
   font-family: var(--font-display);
-  letter-spacing: -0.025em;
-  line-height: 1.15;
+  font-weight: 750;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
 }
 
+h1 { text-wrap: balance; }
+h2,
+h3 { text-wrap: pretty; }
 p { margin-top: 0; }
+button,
+input,
+select { font: inherit; }

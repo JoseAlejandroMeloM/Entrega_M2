@@ -1634,3 +1634,630 @@ Al terminar, informa:
 10. Posibles mejoras futuras, sin implementarlas.
 
 ````
+
+---
+
+# Registro de planificación M2 y trazabilidad del desarrollo
+
+## Propósito de este registro
+
+Esta sección documenta la planificación que dio origen al frontend React de ConectaNegocio, las decisiones tomadas en las dos conversaciones de referencia y la cadena de prompts utilizada para convertir esa planificación en una implementación verificable.
+
+Las conversaciones originales fueron:
+
+1. [Estructurar guía React](https://chatgpt.com/s/t_6ab5bfe846788191a28df1544bbf2671).
+2. [Especificación definitiva del proyecto React](https://chatgpt.com/s/t_6ab5c012090881918b688ff120a94624).
+
+La primera conversación también registró la organización del repositorio, el incidente en el que se eliminó accidentalmente la base CSS del prototipo anterior, las alternativas de recuperación desde Git y la decisión posterior de trabajar con una carpeta React separada. La segunda conversación cerró la especificación funcional y técnica del proyecto antes de implementar.
+
+Este registro resume las decisiones y no sustituye la revisión humana del código, las pruebas, los wireframes o los requisitos del curso.
+
+## 1. Decisiones consolidadas de las conversaciones de planificación
+
+### 1.1 Producto y alcance
+
+ConectaNegocio es un frontend completamente funcional para pequeños comercios y sus distribuidores. “Completamente funcional” significa que cada interacción principal produce un cambio visible y coherente dentro de la sesión; no significa que existan servicios reales.
+
+El problema de referencia es el abastecimiento fragmentado de una papelería como Sol y Luna. El comerciante necesita comparar productos equivalentes, precios, inventario, cantidades mínimas, tiempos de entrega, pedidos, facturas y conversaciones sin saltar entre WhatsApp, llamadas, hojas de cálculo y notas.
+
+La solución se definió como una aplicación web porque:
+
+- Una hoja de cálculo no coordina permisos, conversaciones, ofertas y estados de entrega.
+- WhatsApp no relaciona estructuralmente una conversación con un producto, una oferta o un pedido.
+- Una plataforma de inventario tradicional no necesariamente compara distribuidores.
+- La web funciona en computador, tableta y teléfono y facilita el trabajo administrativo.
+- El mismo contexto de compra puede ser consultado por la tienda y el distribuidor según sus permisos.
+
+El alcance es un prototipo React con mock data. No se incluyeron backend, base de datos, Firebase, Supabase, Node/Express, Redux, TypeScript, Next.js, OCR real, IA real, pagos reales, WebSockets ni una aplicación móvil nativa.
+
+### 1.2 Roles y subroles
+
+Se congelaron cinco roles principales:
+
+| Código | Rol |
+|---|---|
+| `client` | Cliente |
+| `store_admin` | Administrador de tienda |
+| `store_employee` | Empleado de tienda |
+| `distributor_admin` | Administrador de distribuidor |
+| `distributor_employee` | Empleado de distribuidor |
+
+Los empleados tienen subroles:
+
+```text
+store_employee
+├── cashier
+└── inventory
+
+distributor_employee
+├── sales
+├── inventory
+└── logistics
+```
+
+La matriz de permisos definida durante la planificación fue:
+
+| Función | Cliente | Store admin | Cashier | Store inventory | Distributor admin | Dist. sales | Dist. inventory | Logistics |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Ver productos | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Comprar productos | ✓ | | | | | | | |
+| Ver pedidos propios | ✓ | | | | | | | |
+| Registrar ventas | | ✓ | ✓ | | | | | |
+| Ver inventario de tienda | | ✓ | ✓ | ✓ | | | | |
+| Modificar inventario de tienda | | ✓ | | ✓ | | | | |
+| Comparar proveedores | | ✓ | | ✓ | | | | |
+| Crear pedido a proveedor | | ✓ | | ✓ | | | | |
+| Subir facturas demo | | ✓ | | ✓ | | | | |
+| Ver reportes completos | | ✓ | | | | | | |
+| Administrar catálogo/stock distribuidor | | | | | ✓ | | ✓ | |
+| Ver pedidos recibidos | | | | | ✓ | ✓ | | ✓ |
+| Confirmar pedido | | | | | ✓ | ✓ | | |
+| Marcar envío o entrega | | | | | ✓ | | | ✓ |
+| Chat correspondiente | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+La implementación aplica la autorización en dos lugares: navegación/rutas protegidas y operaciones de negocio. Esto evita que una URL directa o una llamada desde un formulario pueda saltarse la política visual.
+
+### 1.3 Autenticación demo
+
+La aplicación contiene usuarios demo y permite registrar usuarios adicionales durante la sesión. Los roles y subroles determinan el formulario de registro, la organización seleccionada y el dashboard de destino.
+
+Después del login:
+
+```text
+client                 → /client/dashboard
+store_admin            → /store/dashboard
+store_employee         → /store/dashboard
+distributor_admin      → /distributor/dashboard
+distributor_employee   → /distributor/dashboard
+```
+
+`localStorage` se reservó únicamente para:
+
+- `cn-react-auth-v1:registeredUsers`
+- `cn-react-auth-v1:currentUserId`
+
+Los datos comerciales se mantienen en memoria y pueden reiniciarse al recargar. La autenticación es demostrativa; no es seguridad de producción.
+
+### 1.4 Mapa de rutas
+
+Las rutas definidas durante la planificación fueron:
+
+```text
+Públicas
+  /
+  /login
+  /register
+  /products
+  /products/:productId
+
+Cliente
+  /client/dashboard
+  /client/cart
+  /client/orders
+  /chat
+
+Tienda
+  /store/dashboard
+  /store/sales
+  /store/inventory
+  /store/suppliers
+  /store/suppliers/:supplierId
+  /store/purchase-orders
+  /store/invoices
+  /store/reports
+  /chat
+
+Distribuidor
+  /distributor/dashboard
+  /distributor/orders
+  /distributor/inventory
+  /chat
+```
+
+`HashRouter` se eligió por compatibilidad con hosting estático. La ruta `/products/:productId` es la ruta dinámica obligatoria y utiliza `useParams`. `/chat` es una ruta protegida compartida; la conversación y sus participantes dependen del rol.
+
+### 1.5 Contratos de datos
+
+Se establecieron IDs estables y relaciones por referencia:
+
+```text
+User
+  id, name, email, password demo, role, subRole, storeId, distributorId
+
+Store
+  id, name, companyCode
+
+Distributor
+  id, name, companyCode, deliveryDays
+
+Product
+  id, name, category, description
+
+SupplierOffer
+  id, productId, distributorId, price, stock, deliveryDays
+
+StoreInventoryItem
+  id, storeId, productId, quantity, minStock, salePrice, lastPurchasePrice
+
+Sale
+  id, storeId, createdBy, date, items[], payments[], total
+
+Order
+  id, orderType, storeId, distributorId, customerId, items[], status, createdBy, createdAt
+
+Invoice
+  id, fileName, supplierId, storeId, items[], totalCost, date
+
+Message
+  id, conversationId, senderId, recipientId, text, timestamp
+```
+
+No existe un precio universal en `Product`. El precio de venta proviene del inventario de la tienda y el precio de compra proviene de `SupplierOffer`. Esta separación evita mezclar precio minorista con precio de proveedor.
+
+### 1.6 Flujos de negocio congelados
+
+#### Venta de tienda
+
+```text
+seleccionar producto y cantidad
+→ validar stock y precio actual de la tienda
+→ validar cash/card/nequi
+→ crear Sale
+→ descontar inventario propio
+→ actualizar historial y reportes
+```
+
+La transacción debe ser atómica en el estado local: si una validación falla, no se crea la venta ni se descuenta inventario. Los pagos pueden representarse como uno o varios registros cuya suma coincide exactamente con el total.
+
+#### Compra del cliente
+
+```text
+catálogo → detalle → carrito → checkout
+→ pedido customer + venta relacionada + pago
+→ descontar inventario
+→ vaciar carrito
+```
+
+El pedido de cliente utiliza `orderType: "customer"` y comienza en `pending`. Las líneas guardan el precio utilizado durante la compra para preservar el historial.
+
+#### Pedido a proveedor
+
+```text
+comparar ofertas
+→ crear pedido supplier en pending
+→ distributor confirma
+→ logistics marca shipped
+→ logistics marca delivered
+→ aumentar inventario una sola vez
+```
+
+Crear el pedido no aumenta inventario. El incremento ocurre únicamente en la primera transición a `delivered`; repetir la transición no debe duplicar existencias.
+
+#### Facturas demo
+
+La factura no se lee con OCR. `analyzeInvoice(file)` compara `file.name` contra metadatos predefinidos en `data/invoices.js`, relaciona proveedor y productos por ID y muestra un resultado transparente. Un archivo no reconocido debe indicar que la lectura es simulada.
+
+#### Reportes
+
+Los reportes se calculan con JavaScript transparente usando `filter`, `map`, `reduce` y `sort`. Incluyen ventas, ingresos, ganancia bruta estimada, métodos de pago, productos más vendidos, bajo stock, gasto en proveedores y recomendaciones.
+
+La recomendación base es:
+
+```text
+quantity <= minStock → reabastecer
+stock bajo + muchas ventas → prioridad alta
+stock bajo + ventas medias → prioridad media
+stock alto + pocas ventas → baja rotación
+```
+
+No se presenta una predicción de IA.
+
+#### Chat
+
+El chat modela dos relaciones principales:
+
+```text
+Cliente ↔ Tienda
+Tienda  ↔ Distribuidor
+```
+
+La secuencia es:
+
+```text
+input → sendMessage() → messages state → ChatWindow re-render
+```
+
+No existe comunicación real entre dispositivos ni WebSocket.
+
+## 2. Arquitectura definida y aplicada
+
+### 2.1 Contextos
+
+`AuthContext` administra:
+
+```text
+currentUser
+registeredUsers
+login(email, password)
+register(userData)
+logout()
+```
+
+`DataContext` administra:
+
+```text
+products
+storeInventory
+sales
+orders
+invoices
+messages
+supplierOffers
+
+registerStoreSale()
+checkoutCustomerOrder()
+createPurchaseOrder()
+updateOrderStatus()
+addInvoice()
+sendMessage()
+```
+
+Las páginas no coordinan manualmente ventas, inventario y pedidos. Reciben datos, mantienen estado local de interacción y llaman a una operación central.
+
+### 2.2 Estado local frente a estado derivado
+
+Se decidió usar `useState` local para búsqueda, categoría, pago seleccionado, archivo, formularios, cantidades, ordenamiento y texto del mensaje.
+
+No se guarda como state derivado información que puede calcularse desde fuentes existentes. Por ejemplo:
+
+```js
+const totalRevenue = getTotalRevenue(sales);
+```
+
+No se crea un segundo `totalRevenue` independiente que pueda quedar desactualizado.
+
+### 2.3 Custom hook obligatorio
+
+`hooks/useDebouncedValue.js` fue definido como el hook explicable del proyecto:
+
+```js
+useEffect(() => {
+  const timer = setTimeout(() => setDebouncedValue(value), delay);
+  return () => clearTimeout(timer);
+}, [value, delay]);
+```
+
+La dependencia `[value, delay]` recalcula el valor cuando cambia la búsqueda o el tiempo de espera. La función de limpieza cancela el temporizador anterior y evita actualizaciones obsoletas.
+
+### 2.4 Componentes y responsabilidades
+
+Los componentes React se mantienen enfocados y no superan 80 líneas. La división conceptual definida fue:
+
+```text
+components/
+├── common/
+├── auth/
+├── catalog/
+├── shopping/
+├── sales/
+├── supply/
+├── reports/
+└── chat/
+
+pages/
+context/
+hooks/
+routes/
+data/
+utils/
+styles/
+```
+
+`ProductCard` muestra un producto; no busca productos ni calcula reportes. `ProductsPage` coordina búsqueda, filtros, `DataContext`, `useDebouncedValue`, `ProductList` y `ProductFilters`. `StoreSalesPage` coordina el formulario y el historial; no modifica inventario directamente. `PurchaseOrderForm` recopila datos y llama al contexto; no implementa la transición por su cuenta.
+
+### 2.5 Utilidades de dominio
+
+La planificación asignó responsabilidades concretas:
+
+```text
+reportUtils.js       → métricas y recomendaciones
+supplierUtils.js     → ofertas, filtros y ordenamiento
+permissions.js       → validación de políticas
+invoiceAnalyzer.js   → análisis de metadatos demo
+orderUtils.js        → pedidos y transiciones
+saleTransaction.js   → validación de ventas y pagos
+shoppingCheckout.js  → transición de checkout
+shoppingCart.js      → carrito y precios de tienda
+```
+
+Los componentes muestran resultados; las reglas reutilizables viven en utilidades puras y se prueban de manera independiente.
+
+## 3. Decisiones de calidad y defensa oral
+
+El equipo debe poder explicar estas cadenas durante la sustentación:
+
+```text
+búsqueda → state local → debounce → filtro → re-render
+
+login → AuthContext → currentUser → política → redirect/dashboard
+
+venta → validación → DataContext → sale + inventory → reportes
+
+pedido proveedor → pending → confirmed → shipped → delivered
+  → inventory increase once
+
+mensaje → sendMessage → messages → ChatWindow re-render
+```
+
+También se definieron estos criterios:
+
+- Un formulario debe tener etiquetas semánticas, validación visible y feedback.
+- La interfaz debe funcionar con teclado y viewport de 320 px.
+- Las rutas directas no pueden saltarse `ProtectedRoute`.
+- Los componentes deben tener una responsabilidad clara.
+- El proyecto debe conservar una fuente única de verdad por entidad.
+- Los datos mock deben describirse honestamente y no aparentar integraciones reales.
+- GitHub Pages debe funcionar con rutas relativas y `HashRouter`.
+
+## 4. OpenSpec y prompt chaining
+
+### 4.1 Uso de OpenSpec
+
+OpenSpec se utilizó como proceso spec-driven para convertir la planificación en una implementación auditable:
+
+```text
+contexto y restricciones
+→ proposal
+→ especificaciones funcionales
+→ design
+→ tasks
+→ implementación
+→ pruebas y validación
+→ archive o siguiente cambio
+```
+
+Las especificaciones principales cubren:
+
+- `frontend-foundation`
+- `authentication-role-access`
+- `product-catalog`
+- `client-shopping`
+- `store-sales-payments`
+- `supply-chain`
+- `invoices-reports`
+- `chat`
+
+Cada cambio describe alcance, no-alcance, roles afectados, transiciones de estado, riesgos, tareas y criterios de aceptación. `openspec validate --all` se usa como comprobación formal antes de cerrar una fase.
+
+### 4.2 Qué significa prompt chaining en este proyecto
+
+Prompt chaining significa que no se pidió construir todo en una única instrucción ambigua. Cada prompt produce una decisión o un artefacto que sirve como entrada para el siguiente:
+
+```text
+problema → alcance → roles → datos → rutas → pantallas
+→ operaciones → arquitectura → especificaciones → implementación
+→ pruebas → despliegue → documentación
+```
+
+Cada paso debe conservar las decisiones anteriores, evitar introducir tecnologías no autorizadas y entregar una salida verificable. La cadena siguiente contiene 20 prompts reconstruibles.
+
+## 5. Cadena de 20 prompts para reconstruir el proyecto
+
+Estos prompts son una guía de trazabilidad y reconstrucción. Deben ejecutarse en orden y cada uno debe recibir como contexto los documentos y artefactos producidos por los pasos anteriores. Son prompts de trabajo, no instrucciones para saltarse revisión humana ni permisos del repositorio.
+
+### Prompt 01 — Inspección y problema
+
+```text
+Inspecciona el repositorio completo y la documentación disponible. Identifica el problema real, el usuario objetivo, las restricciones académicas, el estado del prototipo anterior y los archivos que deben preservarse. Produce un problem statement, usuarios objetivo, evidencia del problema y una lista explícita de fuera de alcance. No edites archivos todavía.
+```
+
+**Salida:** problema, usuario, restricciones y mapa inicial del repositorio.
+
+### Prompt 02 — Decisiones de producto
+
+```text
+Convierte el problem statement anterior en decisiones de producto congeladas para un frontend React funcional con mock data. Define qué significa fully functional en una sesión, qué integraciones quedan simuladas y qué tecnologías están permitidas o prohibidas. Justifica por qué una aplicación web es adecuada y verifica que no sea un clon de una aplicación mayor.
+```
+
+**Salida:** alcance M2, límites técnicos y justificación de la solución web.
+
+### Prompt 03 — Roles y matriz de permisos
+
+```text
+Define cinco roles: client, store_admin, store_employee, distributor_admin y distributor_employee. Define los subroles cashier, inventory, sales y logistics. Construye una matriz de permisos por función, organización y subrol. Indica qué debe bloquearse en navegación, ProtectedRoute y operaciones de negocio.
+```
+
+**Salida:** contrato de autorización y matriz para pruebas.
+
+### Prompt 04 — Contratos de datos
+
+```text
+Diseña los contratos de User, Store, Distributor, Product, SupplierOffer, StoreInventoryItem, Sale, Order, Invoice y Message. Usa IDs estables, relaciones por ID, dinero numérico COP y fechas ISO. Explica por qué Product no debe contener un precio universal y define las invariantes de integridad.
+```
+
+**Salida:** modelo de datos y reglas de fuentes únicas de verdad.
+
+### Prompt 05 — Mapa de rutas
+
+```text
+Diseña el mapa de rutas públicas, de cliente, tienda y distribuidor usando React Router y HashRouter. Incluye /products/:productId con useParams, /chat compartido y rutas protegidas por rol/subrol. Define para cada ruta su página, política, redirect de usuario no autenticado y fallback de usuario sin permiso.
+```
+
+**Salida:** catálogo central de destinos y criterios de route testing.
+
+### Prompt 06 — Descomposición de pantallas
+
+```text
+Descompón cada pantalla del mapa de rutas en responsabilidades claras. Define Landing, Login, Register, Products, ProductDetail, dashboards, Cart, Orders, Sales, Inventory, Suppliers, SupplierDetail, PurchaseOrders, DistributorOrders, Invoices, Reports y Chat. Para cada pantalla indica datos consumidos, estado local, acciones y estados vacíos/error/success.
+```
+
+**Salida:** contrato de UI y componentes candidatos.
+
+### Prompt 07 — Transiciones de negocio
+
+```text
+Define las transiciones puras para checkoutCustomerOrder, registerStoreSale, createPurchaseOrder, updateOrderStatus, addInvoice y sendMessage. Cada transición debe validar precondiciones antes de crear un nuevo snapshot, no mutar entradas y no dejar cambios parciales en caso de error. Especifica entradas, salidas y estados de feedback.
+```
+
+**Salida:** reglas de negocio explicables y testeables.
+
+### Prompt 08 — Arquitectura React
+
+```text
+Propón la arquitectura usando AuthContext, DataContext, páginas coordinadoras, componentes enfocados, utilidades puras y un único custom hook useDebouncedValue. Decide qué valores son state local, qué valores pertenecen a Context y qué valores deben calcularse como derivados. Rechaza Redux, backend y dependencias no aprobadas.
+```
+
+**Salida:** arquitectura de carpetas, ownership de estado y decisiones técnicas.
+
+### Prompt 09 — OpenSpec inicial
+
+```text
+Inicializa o actualiza OpenSpec con el contexto del proyecto. Crea una propuesta spec-driven para el siguiente cambio con secciones Why, What Changes, Non-goals, Capabilities e Impact. Añade requirements y scenarios con Given/When/Then equivalente, roles afectados, transiciones y criterios verificables.
+```
+
+**Salida:** proposal, delta specs y contexto OpenSpec.
+
+### Prompt 10 — Design y tasks
+
+```text
+Para la propuesta aprobada, escribe design.md y tasks.md. El diseño debe explicar decisiones, alternativas rechazadas, ownership de estado, autorización, relaciones de datos, riesgos y plan de migración. Las tareas deben ser pequeñas, comprobables y ordenadas desde utilidades hasta UI y verificación.
+```
+
+**Salida:** diseño implementable y checklist trazable.
+
+### Prompt 11 — Fundación React
+
+```text
+Implementa la fundación React/Vite sin cambiar el alcance: main.jsx, App, HashRouter, layouts, estilos base, branding, navegación y NotFound. Mantén componentes menores de 80 líneas, accesibilidad básica, responsive layout y rutas públicas. Añade pruebas para cargar/build y rutas conocidas/desconocidas.
+```
+
+**Salida:** aplicación arrancable y shell navegable.
+
+### Prompt 12 — Auth y autorización
+
+```text
+Implementa AuthContext, AuthProvider, usuarios demo, registro, login, logout, localStorage limitado, policies.js, destinations.js y ProtectedRoute. Aplica permisos tanto a la navegación como a URLs directas. Añade pruebas para roles, subroles, redirects, cuentas inválidas, duplicados y persistencia demo.
+```
+
+**Salida:** identidad demo y acceso por rol verificable.
+
+### Prompt 13 — Catálogo y custom hook
+
+```text
+Implementa ProductsPage, ProductList, ProductCard, filtros, selección de tienda y ProductDetailPage con useParams. Usa useDebouncedValue para búsqueda y cleanup correcto. Deriva disponibilidad y precios desde StoreInventoryItem; nunca uses un precio universal del Product. Añade estados de no tienda, no oferta, sin stock y producto inexistente.
+```
+
+**Salida:** catálogo funcional y ruta dinámica verificable.
+
+### Prompt 14 — Cliente y checkout
+
+```text
+Implementa el carrito y checkout de cliente usando DataContext y operaciones puras. Valida propietario, tienda seleccionada, líneas, stock, precio actual y pagos cash/card/nequi. En éxito crea un customer order, una sale, pagos exactos, descuento de inventario y carrito vacío. En error conserva el snapshot anterior. Añade pruebas de atomicidad, duplicados e historial propio.
+```
+
+**Salida:** compra de cliente de extremo a extremo.
+
+### Prompt 15 — Ventas e inventario de tienda
+
+```text
+Implementa StoreSalesPage y StoreInventoryPage con componentes enfocados. Permite al administrador y cashier registrar ventas propias; usa precios actuales de inventario, pagos reconciliados, IDs de intento y operación central. Permite al administrador y empleado de inventario consultar/gestionar el inventario permitido. Verifica que cashier no acceda a reportes ni abastecimiento.
+```
+
+**Salida:** venta presencial, historial y consistencia de stock.
+
+### Prompt 16 — Proveedores y pedidos
+
+```text
+Implementa comparación de SupplierOffer, SupplierDetail, PurchaseOrders y DistributorOrders. La tienda inventory crea pedidos supplier en pending. Sales confirma; logistics envía y entrega; admin puede avanzar los estados. La primera transición a delivered aumenta el inventario una sola vez. Valida distributorId, storeId, quantity, oferta y secuencia de estados.
+```
+
+**Salida:** abastecimiento tienda-distribuidor y máquina de estados.
+
+### Prompt 17 — Facturas y reportes
+
+```text
+Implementa invoices.js, invoiceAnalyzer.js, InvoicesPage y ReportsPage. Simula el análisis comparando file.name contra metadata conocida; no afirmes OCR. Deriva ingresos, ganancia bruta estimada, métodos de pago, top products, low stock, supplier spending y recomendaciones desde sales, inventory y orders. Restringe reportes completos a store_admin.
+```
+
+**Salida:** análisis comercial transparente y reportes reproducibles.
+
+### Prompt 18 — Chat contextual
+
+```text
+Implementa la ruta compartida /chat, ChatPage, ChatWindow y messageUtils. Filtra participantes compatibles: client↔store y store↔distributor. Rechaza texto vacío, usuario inexistente y destinatario incompatible. Al enviar, agrega un Message al estado y muestra el re-render. Declara explícitamente que es chat local de sesión y no WebSocket.
+```
+
+**Salida:** comunicación demo con frontera de autorización local.
+
+### Prompt 19 — Calidad, accesibilidad y publicación
+
+```text
+Ejecuta pruebas unitarias y de integración ligera, check de componentes <=80 líneas, build de Vite, git diff --check y openspec validate --all. Revisa labels, focus visible, teclado, estados de error/success, viewport de 320 px y ausencia de tecnologías no aprobadas. Configura GitHub Actions para npm ci, tests, build y deploy de frontend/dist a GitHub Pages, sin desplegar manualmente durante la revisión.
+```
+
+**Salida:** evidencia de calidad y workflow reproducible.
+
+### Prompt 20 — Auditoría y documentación final
+
+```text
+Audita el proyecto completo contra el problem statement, las reglas OpenSpec, la matriz de permisos, el mapa de rutas, los contratos de datos y la rúbrica M2. Reporta cualquier divergencia antes de corregirla. Después actualiza README y AI-LOG con descripción, arquitectura, lógica, equipo, límites, pruebas, despliegue y esta cadena de prompts. No borres trabajo existente, no hagas push y no afirmes integraciones reales que no existan.
+```
+
+**Salida:** auditoría final, README, AI-LOG y registro reconstruible.
+
+## 6. Evidencia de implementación
+
+La cadena anterior se materializó en el repositorio mediante:
+
+- `frontend/src/context/AuthContext.js` y `AuthProvider.jsx` para identidad.
+- `frontend/src/context/DataContext.js` y `DataProvider.jsx` para estado comercial.
+- `frontend/src/routes/destinations.js`, `AppRoutes.jsx` y `ProtectedRoute.jsx` para acceso.
+- `frontend/src/hooks/useDebouncedValue.js` para el custom hook.
+- `frontend/src/utils/` para reglas de negocio puras.
+- `frontend/src/pages/` y `frontend/src/components/` para las vistas y responsabilidades de UI.
+- `frontend/tests/` para las invariantes de permisos, catálogo, carrito, checkout, ventas, pedidos, facturas, reportes y chat.
+- `openspec/specs/` para las capacidades vivas.
+- `openspec/changes/` para propuestas, diseños, tareas y cambios archivados.
+- `.github/workflows/deploy-pages.yml` para pruebas, build y publicación.
+
+La verificación registrada al cerrar esta fase fue:
+
+```text
+61 pruebas automáticas exitosas
+56 componentes JSX dentro del límite de 80 líneas
+Build de producción Vite exitoso
+OpenSpec: 9 elementos validados, 0 fallos
+GitHub Pages preparado mediante GitHub Actions
+```
+
+## 7. Limitaciones y revisión humana
+
+Este registro describe decisiones de planificación y asistencia de IA; no reemplaza la autoría ni la revisión del equipo. Antes de la sustentación, el equipo debe:
+
+1. Probar manualmente los recorridos con cada cuenta demo.
+2. Confirmar que el sitio publicado corresponde al commit final.
+3. Verificar la visualización en escritorio, tableta y móvil.
+4. Revisar que los nombres, enlaces, wireframes y responsabilidades del equipo sean correctos.
+5. Poder explicar las transiciones `login → context → route`, `sale → inventory → reports`, `order → fulfillment → inventory` y `message → state → re-render`.
+
+La aplicación sigue siendo un prototipo frontend. No debe presentarse como autenticación segura, sistema contable, procesador de pagos, OCR, IA o mensajería en tiempo real.
