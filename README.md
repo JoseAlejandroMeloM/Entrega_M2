@@ -108,6 +108,7 @@ La regla de alcance es: si una función no mejora directamente la comparación, 
 | **Catalina Vega Romero** | Investigación y validación del problema con el caso real de la papelería Sol y Luna; definición de necesidades del comerciante; revisión de los flujos, contenidos y coherencia de los wireframes. |
 | **Jose Alejandro Melo Murcia** | Integración general; arquitectura React; conexión de autenticación, catálogo, compras, ventas, inventario, pedidos, reportes, facturas y chat; pruebas, build y preparación de GitHub Pages. |
 | **Alejandro Caycedo** | Creación de la base inicial del repositorio; apoyo en la definición de la estructura del proyecto, los roles y el recorrido principal entre comerciante y proveedor. |
+| **Carlos Gabriel Rodríguez** | Revisión del flujo de catálogo y comparación de proveedores; validación de la claridad de productos, ofertas, precios, disponibilidad y tiempos de entrega. |
 | **Sebastián Franco Umbacia** | Desarrollo y ajuste de las páginas iniciales y de ofertas; consolidación del planteamiento del problema; organización de enlaces y documentación; actualización del README y preparación del repositorio para GitHub Pages. |
 
 El historial de Git y [docs/AI-LOG.md](./docs/AI-LOG.md) complementan esta distribución y registran el proceso de trabajo.
