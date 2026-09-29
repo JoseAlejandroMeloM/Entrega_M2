@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { NavLink, Outlet } from 'react-router';
 import { productName } from '../config/branding.js';
 import SiteNavigation from '../components/common/SiteNavigation.jsx';
+import SiteFooter from '../components/common/SiteFooter.jsx';
 
 export default function PublicLayout() {
   const mainRef = useRef(null);
@@ -27,9 +28,7 @@ export default function PublicLayout() {
       <main className="site-main" id="main-content" ref={mainRef} tabIndex={-1}>
         <Outlet />
       </main>
-      <footer className="site-footer">
-        <div className="container">{productName} · Prototipo frontend académico</div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

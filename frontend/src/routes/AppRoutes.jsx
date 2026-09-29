@@ -19,6 +19,7 @@ import ReportsPage from '../pages/ReportsPage.jsx';
 import InvoicesPage from '../pages/InvoicesPage.jsx';
 import ChatPage from '../pages/ChatPage.jsx';
 import DistributorInventoryPage from '../pages/DistributorInventoryPage.jsx';
+import TermsPage from '../pages/TermsPage.jsx';
 import { destinations } from './destinations.js';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import AccountEntryRoute from './AccountEntryRoute.jsx';
@@ -42,6 +43,7 @@ const pages = {
   invoices: InvoicesPage,
   chat: ChatPage,
   distributorInventory: DistributorInventoryPage,
+  terms: TermsPage,
 };
 
 export default function AppRoutes() {

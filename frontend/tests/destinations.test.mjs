@@ -7,7 +7,7 @@ import { routeDecision } from '../src/utils/routeAccess.js';
 
 test('only implemented destinations are in the central catalog', () => {
   assert.deepEqual(destinations.map(({ path }) => path), [
-    '/', '/products', '/products/:productId', '/login', '/register',
+    '/', '/products', '/products/:productId', '/login', '/register', '/terms',
     '/client/dashboard', '/client/cart', '/client/orders', '/store/dashboard', '/store/sales', '/store/suppliers',
     '/store/suppliers/:supplierId', '/store/purchase-orders', '/store/inventory', '/store/reports', '/store/invoices',
     '/chat', '/distributor/dashboard', '/distributor/orders', '/distributor/inventory',

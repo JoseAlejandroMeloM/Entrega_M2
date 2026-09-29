@@ -21,7 +21,37 @@
 .nav-button:hover { background: rgb(255 255 255 / 8%); color: white; transform: translateY(-1px); }
 .site-nav a[aria-current="page"]::after { transform: scaleX(1); }
 .site-main { flex: 1; min-width: 0; }
-.site-footer { padding-block: 1.6rem; border-top: 1px solid rgb(255 255 255 / 8%); background: var(--navy); color: rgb(255 255 255 / 65%); font-size: 0.86rem; letter-spacing: 0.015em; }
+.site-footer { padding-block: clamp(2.5rem, 6vw, 4.5rem) 1.5rem; border-top: 1px solid rgb(255 255 255 / 8%); background: radial-gradient(circle at 85% 15%, rgb(117 103 238 / 18%), transparent 24rem), var(--navy); color: rgb(255 255 255 / 68%); }
+.footer-grid { display: grid; grid-template-columns: minmax(16rem, 0.75fr) minmax(0, 1.25fr); gap: clamp(2rem, 6vw, 6rem); }
+.footer-about { max-width: 28rem; }
+.footer-kicker { margin-bottom: 0.65rem; color: var(--mint); font-size: 0.7rem; font-weight: 850; letter-spacing: 0.14em; text-transform: uppercase; }
+.footer-name { margin-bottom: 0.65rem; color: white; font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 850; letter-spacing: -0.055em; }
+.footer-about > p:not(.footer-kicker, .footer-name) { margin-bottom: 1.4rem; }
+.footer-legal-link { display: inline-flex; align-items: center; gap: 0.45rem; color: white; font-size: 0.9rem; font-weight: 800; text-decoration-color: rgb(158 232 197 / 45%); text-underline-offset: 0.3rem; transition: color 180ms ease, gap 180ms ease; }
+.footer-legal-link:hover { gap: 0.65rem; color: var(--mint); }
+.footer-team h2 { margin-bottom: 1.1rem; color: white; font-size: 1rem; letter-spacing: 0.02em; }
+.footer-team address { font-style: normal; }
+.team-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; padding: 0; margin: 0; border-top: 1px solid rgb(255 255 255 / 12%); list-style: none; }
+.team-list li { display: grid; gap: 0.15rem; min-width: 0; padding: 0.85rem 0; border-bottom: 1px solid rgb(255 255 255 / 12%); }
+.team-list li:nth-child(odd) { padding-right: 1rem; }
+.team-list li:nth-child(even) { padding-left: 1rem; border-left: 1px solid rgb(255 255 255 / 12%); }
+.team-list span { color: white; font-size: 0.88rem; font-weight: 750; }
+.team-list a { width: fit-content; max-width: 100%; color: var(--mint); font-size: 0.78rem; overflow-wrap: anywhere; text-decoration-color: rgb(158 232 197 / 35%); text-underline-offset: 0.2rem; }
+.team-list a:hover { color: white; }
+.footer-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid rgb(255 255 255 / 12%); font-size: 0.75rem; letter-spacing: 0.025em; }
+
+.legal-page { padding-block: clamp(2.5rem, 6vw, 5rem); }
+.legal-hero { max-width: 54rem; margin-bottom: clamp(2rem, 5vw, 3.5rem); }
+.legal-hero h1 { margin-bottom: 1rem; font-size: clamp(3rem, 7vw, 5.6rem); }
+.legal-hero > p:not(.eyebrow) { max-width: 43rem; color: var(--muted); }
+.legal-hero > p:nth-of-type(2) { margin-bottom: 0.5rem; color: var(--terracotta-dark); font-size: 0.82rem; font-weight: 750; }
+.legal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--line-strong); border-left: 1px solid var(--line-strong); }
+.legal-section { padding: clamp(1.3rem, 3vw, 2rem); border-right: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); background: rgb(255 253 248 / 42%); }
+.legal-section h2 { margin-bottom: 0.7rem; font-size: 1.2rem; }
+.legal-section p { margin: 0; color: var(--muted); }
+.legal-notice { display: flex; align-items: start; gap: 0.75rem 1.5rem; margin-block: 2rem; padding: 1.2rem 1.4rem; border: 1px solid rgb(18 102 74 / 18%); border-radius: var(--radius); background: rgb(158 232 197 / 20%); }
+.legal-notice strong { flex: none; color: var(--mint-dark); }
+.legal-notice p { margin: 0; }
 
 .home-page { padding-block: clamp(2rem, 6vw, 5rem); }
 .hero {
@@ -119,4 +149,10 @@
   .floating-chip--stock { right: 1rem; bottom: 0; }
   .value-grid { grid-template-columns: minmax(0, 1fr); }
   .value-grid article + article { border-top: 1px solid var(--line-strong); border-left: 0; }
+  .footer-grid,
+  .legal-grid { grid-template-columns: minmax(0, 1fr); }
+  .team-list { grid-template-columns: minmax(0, 1fr); }
+  .team-list li:nth-child(odd),
+  .team-list li:nth-child(even) { padding-inline: 0; border-left: 0; }
+  .legal-notice { display: grid; }
 }

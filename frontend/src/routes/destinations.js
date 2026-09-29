@@ -22,6 +22,7 @@ export const destinations = [
   { path: '/products/:productId', page: 'productDetail', requiresAuth: false },
   { path: '/login', page: 'login', requiresAuth: false, navigation: 'Ingresar', accountEntry: true },
   { path: '/register', page: 'register', requiresAuth: false, navigation: 'Registrarse', accountEntry: true },
+  { path: '/terms', page: 'terms', requiresAuth: false },
   { path: '/client/dashboard', page: 'dashboard', requiresAuth: true, allowedRoles: ['client'], navigation: 'Mi panel' },
   clientCartDestination,
   { path: '/client/orders', page: 'orders', requiresAuth: true, allowedRoles: ['client'], navigation: 'Mis pedidos' },
